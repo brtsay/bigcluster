@@ -9,8 +9,8 @@ source("prof_func.R")
 nRows <- 1000
 nRegressors <- 5
 nClusterVars <- 2
-nSims <- 2
 nClusterCats <- 9
+nSims <- 20
 ## modelFamily options are poisson, negbin, or ols
 modelFamily <- "ols"
 errorsPerc <- list(rep(0, nSims))
@@ -34,7 +34,7 @@ for (nsim in 1:nSims) {
     bigvcov <- BigCluster(models[[2]],
                           clusters = dataClustersTheta[[2]],
                           dataFrame = dataClustersTheta[[1]],
-                          sumMethod = "fast")
+                          sumMethod = "slow")
     randomRow <- sample(1:nrow(bigvcov), 1)
     randomCol <- sample(1:ncol(bigvcov), 1)
     print("Random entry in covariance matrix")
@@ -47,9 +47,10 @@ for (nsim in 1:nSims) {
     print("Entry where sandwich and big covariance matrix differ the most")
     print(paste(bigvcov[maxError[1], maxError[2]], "(big)"))
     print(paste(regvcov[maxError[1], maxError[2]], "(sandwich)"))
+    print(paste("Simulation", nsim, "completed"))
 }
 
-print("Mean error (percent)")
+print("Mean difference (percent)")
 print(sapply(errorsPerc, mean))
 print("Max error (magnitude)")
 print(sapply(errorsMag, max))
@@ -58,4 +59,3 @@ print(sapply(errorsMag, max))
 errorsVec <- as.vector(unlist(errorsPerc))
 regVec <- as.vector(unlist(regvcovList))
 plot(log(abs(regVec)), errorsVec)
-

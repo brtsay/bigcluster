@@ -23,7 +23,7 @@ GetTheta <- function(model) {
 }
 
 
-CreateResid <- function(model, dataFrame, ycolName) {
+CreateResid <- function(model, dataFrame, ycolName, xmat) {
     ## Create residuals for big models
     modelOffset <- 0
     if (!is.null(attr(model$terms, "offset"))) {
@@ -37,7 +37,6 @@ CreateResid <- function(model, dataFrame, ycolName) {
             modelOffset <- dataFrame[[offsetName[2]]]
         }
     }
-    xmat <- sparse.model.matrix(model, dataFrame)
     eta <- xmat %*% coef(model) + modelOffset
     mu <- exp(eta)
     Y <- dataFrame[[ycolName]]
@@ -62,7 +61,7 @@ EstfunBigGLM <- function(model, modelFormula, dataFrame) {
     if(any(alias <- is.na(coef(model)))) xmat <- xmat[, !alias, drop = FALSE]
     ## get residuals
     ycolName <- as.character(modelFormula[2])
-    xResid <- CreateResid(model, dataFrame, ycolName)
+    xResid <- CreateResid(model, dataFrame, ycolName, xmat)
     
     rval <- xResid * xmat
     attr(rval, "assign") <- NULL
@@ -156,10 +155,6 @@ BigMeat <- function(bigmodel, clusters, type, dataFrame, sumMethod, multi0=FALSE
                    dimnames = list(colnames(ef), colnames(ef)))
 
     cluster <- as.big.matrix(cluster)
-    storage <- data.table(index = ef@i,
-                          rowIdx = 1:length(ef@i))
-    storage <- storage[, .(rowIdx = list(rowIdx)),
-                       by = index]
 
     ## add OPG for each cluster-aggregated estfun
     for (i in 1:length(clustCombs)) {
@@ -172,22 +167,25 @@ BigMeat <- function(bigmodel, clusters, type, dataFrame, sumMethod, multi0=FALSE
                }
         if (g[i] < n) {
             if (sumMethod == "slow") {
-                   clusterIndex <- bigsplit(cluster, i, splitcol = NA_real_)
-                   efi <- ff(vmode = "double", dim = c(length(clusterIndex), ncol = ncol(ef)))
-                   for (j in 1:ncol(ef)) {
-                       efi[, j] <- mclapply(clusterIndex, function(x) {
-                           rowIdx <- unlist(storage[x]$rowIdx, recursive = FALSE, use.names = FALSE)
-                           cutted <- findInterval(rowIdx, vec = ef@p,
+                storage <- data.table(index = ef@i,
+                                      rowIdx = 1:length(ef@i))
+                storage <- storage[, .(rowIdx = list(rowIdx)),
+                                   by = index]
+                clusterIndex <- bigsplit(cluster, i, splitcol = NA_real_)
+                efi <- ff(vmode = "double", dim = c(length(clusterIndex), ncol = ncol(ef)))
+                for (j in 1:ncol(ef)) {
+                    efi[, j] <- mclapply(clusterIndex, function(x) {
+                        rowIdx <- unlist(storage[x]$rowIdx, recursive = FALSE, use.names = FALSE)
+                        cutted <- findInterval(rowIdx, vec = ef@p,
                                                   rightmost.closed = FALSE, left.open = TRUE)
-                           group <- which(cutted == j)
-                           result <- sum(ef@x[rowIdx[group]])
-                           return(result)
-                           ## ClusterIndexSum(x, storage, ef, j)
-                       })
-                       if (j %% 10 == 0) {
-                           message("Completed column ", j, "/", ncol(ef), " of cluster ", i, "/", length(clustCombs))
-                       }
-                   }
+                        group <- which(cutted == j)
+                        result <- sum(ef@x[rowIdx[group]])
+                        return(result)
+                    })
+                    if (j %% 10 == 0) {
+                        message("Completed column ", j, "/", ncol(ef), " of cluster ", i, "/", length(clustCombs))
+                    }
+                }
             } else if (sumMethod == "fast") {
                 efi <- apply(ef, 2L, tapply, cluster[,i], sum)
             }
