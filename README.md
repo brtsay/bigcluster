@@ -62,5 +62,14 @@ Tests comparing the output of `BigCluster` with sandwich's `vcovCL` are included
 
 The for loop will generate the data, run `lm` and `biglm` models on the data, and then save the differences between the covariance matrix generated via `vcovCL` and the one generated via `BigCluster`. Values will be printed to demonstrate the differences between each matrix. Values include a random entry in the matrix; the entry where the output differs the most; the mean percentage difference between the two matrices; and the largest magnitude difference between entries. In my own tests, the largest magnitude difference is generally on the order of 10^-5. A plot can be shown that indicates that the highest percentage error occurs in entries that have the lowest magnitudes.
 
-NOTE: Differences are low in magnitude when comparing `vcovCL` and `BigCluster` when the number of cluster categories is less than 10. As of sandwich version 2.4-0, when the number of clusteres is greater than 10, then errors tend to increase. This is due to differences between how `vcovCL` and `BigCluster` identify the intersection of clusters when there are more than one cluster. The `vcovCL` way will conflate some cluster combinations as the same even when they are different.
+NOTE: Differences are low in magnitude when comparing `vcovCL` and `BigCluster` when the number of cluster categories is less than 10. As of sandwich version 2.4-0, when the number of clusters is greater than 10, then errors tend to increase. This is due to differences between how `vcovCL` and `BigCluster` identify the intersection of clusters when there are more than one cluster. The `vcovCL` way will conflate some cluster combinations as the same even when they are different.
 
+## References
+
+MacKinnon, J. G., and H. White (1985). "Some heteroskedasticity consistent covariance matrix estimators with improved finite sample properties," Journal of Econometrics, 29, 305–325. 
+
+
+Achim Zeileis (2004). Econometric Computing with HC and HAC Covariance Matrix Estimators. Journal of Statistical Software 11(10), 1-17. URL http://www.jstatsoft.org/v11/i10/. 
+
+
+Achim Zeileis (2006). Object-Oriented Computation of Sandwich Estimators. Journal of Statistical Software 16(9), 1-16. URL http://www.jstatsoft.org/v16/i09/. 
